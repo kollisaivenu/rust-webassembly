@@ -10,7 +10,6 @@ const resultsDiv = document.getElementById("results"); // Add this to your HTML
 
 let imageLoaded = false;
 
-// --- 1. Pure JavaScript Implementation ---
 function grayscaleJS(data) {
     for (let i = 0; i < data.length; i += 4) {
         // Standard luminance formula: 0.299R + 0.587G + 0.114B
@@ -30,7 +29,6 @@ input.addEventListener("change", () => {
     img.src = URL.createObjectURL(file);
 
     img.onload = () => {
-        // Resize canvas to fit image
         canvas.width = img.width;
         canvas.height = img.height;
 
@@ -44,29 +42,23 @@ input.addEventListener("change", () => {
 processBtn.addEventListener("click", () => {
     if (!imageLoaded) return;
 
-    // Get the raw pixel data from the canvas
     const originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-    // --- 2. Create Isolated Copies ---
-    // We create distinct copies so one operation doesn't affect the other.
-    // .slice() creates a deep copy of the underlying buffer.
     const jsData = new Uint8ClampedArray(originalImageData.data.buffer.slice(0));
     const wasmData = new Uint8ClampedArray(originalImageData.data.buffer.slice(0));
 
-    // --- 3. Benchmark JavaScript ---
+    // Grayscale using JS
     const jsStart = performance.now();
     grayscaleJS(jsData);
     const jsEnd = performance.now();
     const jsTime = jsEnd - jsStart;
 
-    // --- 4. Benchmark WebAssembly ---
+    // Grayscale using webassembly
     const wasmStart = performance.now();
-    // Assuming your Rust function accepts a mutable Uint8Array/ClampedArray
     grayscale(wasmData);
     const wasmEnd = performance.now();
     const wasmTime = wasmEnd - wasmStart;
 
-    // --- 5. Display Results ---
     const speedup = (jsTime / wasmTime).toFixed(2);
 
     resultsDiv.innerHTML = `
@@ -76,7 +68,6 @@ processBtn.addEventListener("click", () => {
         <em>Wasm is <strong>${speedup}x</strong> faster than JS</em>
     `;
 
-    // Render the Wasm result to the canvas to prove it worked
     const resultImage = new ImageData(wasmData, canvas.width, canvas.height);
     ctx.putImageData(resultImage, 0, 0);
 });
